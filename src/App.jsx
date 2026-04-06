@@ -946,18 +946,18 @@ export default function OOPFundamentals() {
         .ap-btn:hover{background:var(--bg-3)}
 
         /* DT */
-        .dt-diagram{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:40px}
-        .dt-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-2)}
-        .dt-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--accent-3);background:rgba(196,155,222,.1);border:1px solid rgba(196,155,222,.2);padding:2px 8px;border-radius:4px;letter-spacing:.05em}
-        .dt-title{font-size:14px;font-weight:600;color:var(--text-0)}
+        .dt{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:40px}
+        .dt-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-2)}
+        .dt-tg{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--accent-3);background:rgba(196,155,222,.1);border:1px solid rgba(196,155,222,.2);padding:2px 8px;border-radius:4px;letter-spacing:.05em}
+        .dt-ti{font-size:14px;font-weight:600;color:var(--text-0)}
         .dt-tabs{display:flex;gap:2px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-1)}
         .dt-tab{padding:5px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--text-3);background:transparent;border:1px solid transparent;cursor:pointer;transition:all .15s}
         .dt-tab:hover{color:var(--text-1);background:var(--bg-2)}
         .dt-tab.on{background:var(--bg-3);border-color:var(--border-light)}
-        .dt-canvas{padding:16px;min-height:200px}
+        .dt-cv{padding:16px;min-height:200px}
         .dt-canvas svg{max-width:100%}
-        .dia-click{cursor:pointer}.dia-click:hover rect{filter:brightness(1.2)}
-        .dia-n text{user-select:none;pointer-events:none}
+        .dc{cursor:pointer}.dc:hover rect{filter:brightness(1.2)}
+        .dn text{user-select:none;pointer-events:none}
 
         /* Tables */
         .tbl-wrap{overflow-x:auto}
