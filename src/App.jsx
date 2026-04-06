@@ -276,7 +276,7 @@ const PILLARS = [
         ["@property getter only (DEC-1.1)", "Clean API, read-only access", "Method call overhead vs direct attribute", "Default for any non-trivial field"],
         ["@property + validated setter (DEC-1.3)", "Invariant enforcement at boundary", "Setter logic adds complexity; masks expensive ops behind assignment", "Field has business constraints (price ≥ 0, email format)"],
         ["__slots__ (OBJ-1)", "Memory efficiency, prevents typo attributes", "No __dict__, breaks some metaprogramming, complicates MI", "High-volume instances (millions of Seat objects, cache entries)"],
-        ["Defensive copy (OBJ-2)", "Prevents alias mutation", "CPU + memory cost of copying", "Mutable collections crossing trust boundaries"],
+        ["Defensive copy (OBJ-2)", "CPU + memory cost of copying", "Prevents alias mutation", "Mutable collections crossing trust boundaries"],
         ["MappingProxyType", "Zero-copy read-only view", "Only works for dicts; nested mutables still exposed", "Config objects that should never change after init"],
       ]
     },
@@ -521,199 +521,319 @@ const SOLID_MAP = {
 
 
 /* ════════════════════════════════════════════════════════════════════════════
-   DECISION TREE DIAGRAMS (unchanged from original)
+   DECISION TREE — SVG with styled label tags
    ════════════════════════════════════════════════════════════════════════════ */
 
-/*
-  DT-OOP-1 — Single comprehensive SVG
-  
-  Replace the entire DT / DecisionTree section in App.jsx with this.
-  No tabs, no panels — one scrollable diagram showing all 4 branches.
-  
-  Usage:  <DecisionTree scrollTo={scrollTo} />
-*/
+/* SVG primitives */
+function Bx({x,y,w,h,fill,stroke,rx,children,onClick,cls=""}){
+  return <g className={`dn ${cls}`} onClick={onClick} style={onClick?{cursor:"pointer"}:{}}>
+    <rect x={x} y={y} width={w} height={h} rx={rx||6} fill={fill||"var(--bg-2)"} stroke={stroke||"var(--border-light)"} strokeWidth="0.7"/>
+    {children}
+  </g>;
+}
 
-function Bx({x,y,w,h,fill,stroke,rx,children,onClick,cls=""}){return<g className={`dn ${cls}`} onClick={onClick} style={onClick?{cursor:"pointer"}:{}}><rect x={x} y={y} width={w} height={h} rx={rx||6} fill={fill||"var(--bg-2)"} stroke={stroke||"var(--border-light)"} strokeWidth="0.7"/>{children}</g>;}
-function Ar({x1,y1,x2,y2,d}){return<line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text-3)" strokeWidth="0.8" markerEnd="url(#da)" strokeDasharray={d?"4 3":"none"}/>;} 
-function Lb({x,y,children,a="middle",s=10,c="var(--text-2)",w=400}){return<text x={x} y={y} textAnchor={a} dominantBaseline="central" fill={c} fontSize={s} fontFamily="'IBM Plex Mono',monospace" fontWeight={w}>{children}</text>;}
+function Ar({x1,y1,x2,y2,d,curve}){
+  if (curve) {
+    return <path d={curve} fill="none" stroke="var(--text-3)" strokeWidth="0.8" markerEnd="url(#da)" strokeDasharray={d?"4 3":"none"}/>;
+  }
+  return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text-3)" strokeWidth="0.8" markerEnd="url(#da)" strokeDasharray={d?"4 3":"none"}/>;
+}
+
+function Lb({x,y,children,a="middle",s=10,c="var(--text-2)",w=400}){
+  return <text x={x} y={y} textAnchor={a} dominantBaseline="central" fill={c} fontSize={s} fontFamily="'IBM Plex Mono',monospace" fontWeight={w}>{children}</text>;
+}
+
+/* ─── SVG Label Tag — mirrors RefTag styling inside SVG ─── */
+function SvgTag({ x, y, label, anchor="middle" }) {
+  const info = getLabelInfo(label);
+  const charW = 6.2;
+  const iconW = 10;
+  const padX = 8;
+  const h = 18;
+  const textW = label.length * charW;
+  const totalW = iconW + textW + padX * 2;
+  const rx = anchor === "middle" ? x - totalW / 2 : anchor === "start" ? x : x - totalW;
+
+  return (
+    <g className="svg-tag">
+      <rect
+        x={rx} y={y - h / 2}
+        width={totalW} height={h}
+        rx={4}
+        fill={info.bg}
+        stroke={info.border}
+        strokeWidth="0.8"
+      />
+      <text
+        x={rx + padX} y={y + 0.5}
+        textAnchor="start" dominantBaseline="central"
+        fill={info.color} fontSize={7} fontFamily="'IBM Plex Mono',monospace"
+        opacity={0.7}
+      >{info.icon}</text>
+      <text
+        x={rx + padX + iconW} y={y + 0.5}
+        textAnchor="start" dominantBaseline="central"
+        fill={info.color} fontSize={9} fontFamily="'IBM Plex Mono',monospace" fontWeight={500}
+      >{label}</text>
+    </g>
+  );
+}
+
+/* ─── Row of multiple SVG tags, auto-spaced ─── */
+function SvgTagRow({ cx, y, labels, gap=4 }) {
+  const charW = 6.2, iconW = 10, padX = 8;
+  const widths = labels.map(l => iconW + l.length * charW + padX * 2);
+  const totalW = widths.reduce((a, b) => a + b, 0) + gap * (labels.length - 1);
+  let curX = cx - totalW / 2;
+  return <g>{labels.map((l, i) => {
+    const tag = <SvgTag key={l} x={curX} y={y} label={l} anchor="start" />;
+    curX += widths[i] + gap;
+    return tag;
+  })}</g>;
+}
+
 
 function DecisionTree({scrollTo}) {
-  // Column centers
-  const C1=85, C2=255, C3=425, C4=595;
-  const CW=150; // column width
-  
-  // Colors
-  const enc={c:"var(--accent-2)",bg:"rgba(133,205,202,0.10)",b:"rgba(133,205,202,0.25)"};
-  const abs={c:"var(--accent-4)",bg:"rgba(121,184,255,0.10)",b:"rgba(121,184,255,0.25)"};
-  const inh={c:"var(--accent-1)",bg:"rgba(232,168,124,0.10)",b:"rgba(232,168,124,0.25)"};
-  const pol={c:"var(--yellow)",bg:"rgba(252,211,77,0.10)",b:"rgba(252,211,77,0.25)"};
-  const red={bg:"rgba(248,113,113,0.05)",b:"rgba(248,113,113,0.2)"};
-  const grn={bg:"rgba(110,231,183,0.08)",b:"rgba(110,231,183,0.2)"};
+  const C1 = 90, C2 = 260, C3 = 430, C4 = 600;
+  const CW = 152;
 
-  return <div className="dt" id="dt-oop-1">
-    <div className="dt-hd">
-      <span className="dt-tg">DT-OOP-1</span>
-      <span className="dt-ti">Four Pillars Decision Tree</span>
-    </div>
-    <div className="dt-cv" style={{overflowY:"auto",maxHeight:"70vh"}}>
-      <svg width="100%" viewBox="0 0 680 920" style={{display:"block",minWidth:600}}>
-        <defs>
-          <marker id="da" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-            <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </marker>
-        </defs>
+  const enc = { c: "var(--accent-2)", bg: "rgba(133,205,202,0.10)", b: "rgba(133,205,202,0.25)" };
+  const abs = { c: "var(--accent-4)", bg: "rgba(121,184,255,0.10)", b: "rgba(121,184,255,0.25)" };
+  const inh = { c: "var(--accent-1)", bg: "rgba(232,168,124,0.10)", b: "rgba(232,168,124,0.25)" };
+  const pol = { c: "var(--yellow)",   bg: "rgba(252,211,77,0.10)",  b: "rgba(252,211,77,0.25)" };
+  const red = { bg: "rgba(248,113,113,0.05)", b: "rgba(248,113,113,0.2)" };
+  const grn = { bg: "rgba(110,231,183,0.08)", b: "rgba(110,231,183,0.2)" };
 
-        {/* ═══ ROW 1: START ═══ */}
-        <Bx x={220} y={12} w={240} h={32} rx={16} fill="var(--bg-3)">
-          <Lb x={340} y={28} s={11} c="var(--text-1)" w={500}>New class or method to write</Lb>
-        </Bx>
-        <Ar x1={340} y1={44} x2={340} y2={64}/>
+  return (
+    <div className="dt" id="dt-oop-1">
+      <div className="dt-hd">
+        <span className="dt-tg">DT-OOP-1</span>
+        <span className="dt-ti">Four Pillars Decision Tree</span>
+      </div>
+      <div className="dt-cv" style={{ overflowY: "auto", maxHeight: "72vh" }}>
+        <svg width="100%" viewBox="0 0 690 1060" style={{ display: "block", minWidth: 620 }}>
+          <defs>
+            <marker id="da" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </marker>
+            {/* Subtle glow filter for header nodes */}
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
 
-        {/* ═══ ROW 2: WHICH PILLAR? ═══ */}
-        <Bx x={170} y={64} w={340} h={40} fill="rgba(196,155,222,0.08)" stroke="rgba(196,155,222,0.25)" rx={8}>
-          <Lb x={340} y={78} s={11} c="var(--accent-3)" w={600}>Which OOP pillar? — DT-OOP-1</Lb>
-          <Lb x={340} y={92} s={9}>Walk each relevant branch. Most designs involve more than one.</Lb>
-        </Bx>
-
-        {/* ═══ ROW 3: FOUR PILLAR HEADERS ═══ */}
-        {[
-          {cx:C1,l:"Encapsulation",...enc,id:"oop-encap"},
-          {cx:C2,l:"Abstraction",...abs,id:"oop-abstr"},
-          {cx:C3,l:"Inheritance",...inh,id:"oop-inher"},
-          {cx:C4,l:"Polymorphism",...pol,id:"oop-poly"},
-        ].map((p,i)=><g key={p.l}>
-          <Ar x1={220+i*80} y1={104} x2={p.cx} y2={128}/>
-          <Bx x={p.cx-CW/2} y={128} w={CW} h={32} fill={p.bg} stroke={p.b} rx={6} 
-            onClick={scrollTo?()=>scrollTo(p.id):undefined} cls={scrollTo?"dc":""}>
-            <Lb x={p.cx} y={144} s={11} c={p.c} w={600}>{p.l}</Lb>
+          {/* ═══ ROW 1: START ═══ */}
+          <Bx x={225} y={12} w={240} h={34} rx={17} fill="var(--bg-3)" stroke="var(--border-light)">
+            <Lb x={345} y={29} s={11} c="var(--text-1)" w={500}>New class or method to write</Lb>
           </Bx>
-          <Ar x1={p.cx} y1={160} x2={p.cx} y2={180}/>
-        </g>)}
+          <Ar x1={345} y1={46} x2={345} y2={68} />
 
-        {/* ═══ ROW 4: DECISION GATES ═══ */}
-        {/* Encapsulation gate */}
-        <Bx x={C1-68} y={180} w={136} h={28} fill={enc.bg} stroke={enc.b} rx={4}>
-          <Lb x={C1} y={194} s={10} c={enc.c} w={500}>State exposed?</Lb>
-        </Bx>
-        {/* Abstraction gate */}
-        <Bx x={C2-68} y={180} w={136} h={28} fill={abs.bg} stroke={abs.b} rx={4}>
-          <Lb x={C2} y={194} s={10} c={abs.c} w={500}>Boundary type?</Lb>
-        </Bx>
-        {/* Inheritance gate */}
-        <Bx x={C3-68} y={180} w={136} h={28} fill={inh.bg} stroke={inh.b} rx={4}>
-          <Lb x={C3} y={194} s={10} c={inh.c} w={500}>True is-a?</Lb>
-        </Bx>
-        {/* Polymorphism gate */}
-        <Bx x={C4-68} y={180} w={136} h={28} fill={pol.bg} stroke={pol.b} rx={4}>
-          <Lb x={C4} y={194} s={10} c={pol.c} w={500}>Which mechanism?</Lb>
-        </Bx>
-
-        {/* ═══ ROW 5: OUTCOMES ═══ */}
-        {/* ─── Encapsulation outcomes ─── */}
-        <Ar x1={C1} y1={208} x2={C1} y2={232}/>
-        <Bx x={C1-72} y={232} w={144} h={120} fill={enc.bg} stroke={enc.b} rx={6}>
-          <Lb x={C1} y={248} s={10} c={enc.c} w={600}>Fix: ENCAP-1</Lb>
-          <Lb x={C1} y={266} s={9}>_private convention</Lb>
-          <Lb x={C1} y={280} s={9}>@property — DEC-1</Lb>
-          <Lb x={C1} y={294} s={9}>__slots__ — OBJ-1</Lb>
-          <Lb x={C1} y={308} s={9}>Defensive copy — OBJ-2</Lb>
-          <Lb x={C1} y={324} s={9}>MappingProxyType</Lb>
-          <Lb x={C1} y={340} s={9} c="var(--accent-1)">Tell, don't ask</Lb>
-        </Bx>
-
-        {/* ─── Abstraction outcomes ─── */}
-        <Ar x1={C2} y1={208} x2={C2} y2={232}/>
-        <Bx x={C2-72} y={232} w={144} h={120} fill={abs.bg} stroke={abs.b} rx={6}>
-          <Lb x={C2} y={248} s={10} c={abs.c} w={600}>Choose tool</Lb>
-          <Lb x={C2} y={268} s={9} c={abs.c}>IO boundary → Protocol</Lb>
-          <Lb x={C2} y={282} s={9}>PRT-2, always, even 1 impl</Lb>
-          <Lb x={C2} y={300} s={9} c={abs.c}>Shared impl → ABC</Lb>
-          <Lb x={C2} y={314} s={9}>DEC-5, B.2.1</Lb>
-          <Lb x={C2} y={332} s={9} c="var(--yellow)">No 2nd impl → YAGNI</Lb>
-          <Lb x={C2} y={346} s={9} c={abs.c}>Complex → Facade PAT-4</Lb>
-        </Bx>
-
-        {/* ─── Inheritance outcomes ─── */}
-        <Ar x1={C3-30} y1={208} x2={C3-40} y2={232}/>
-        <Lb x={C3-42} y={218} s={8} c="var(--red)">No</Lb>
-        <Ar x1={C3+30} y1={208} x2={C3+40} y2={232}/>
-        <Lb x={C3+44} y={218} s={8} c="var(--green)">Yes</Lb>
-        {/* No → Composition */}
-        <Bx x={C3-72} y={232} w={64} h={50} fill={red.bg} stroke={red.b} rx={4}>
-          <Lb x={C3-40} y={250} s={9} c="var(--red)" w={500}>Use</Lb>
-          <Lb x={C3-40} y={264} s={9} c="var(--red)" w={500}>compo-</Lb>
-          <Lb x={C3-40} y={278} s={9} c="var(--red)" w={500}>sition</Lb>
-        </Bx>
-        {/* Yes → POLY-1 + super check */}
-        <Bx x={C3+4} y={232} w={68} h={120} fill={inh.bg} stroke={inh.b} rx={4}>
-          <Lb x={C3+38} y={248} s={9} c={inh.c} w={600}>POLY-1</Lb>
-          <Lb x={C3+38} y={264} s={8}>Max 1</Lb>
-          <Lb x={C3+38} y={276} s={8}>concrete</Lb>
-          <Lb x={C3+38} y={290} s={8}>base</Lb>
-          <Lb x={C3+38} y={310} s={9} c={inh.c} w={500}>super()?</Lb>
-          <Lb x={C3+38} y={326} s={8}>Every class</Lb>
-          <Lb x={C3+38} y={338} s={8}>must call it</Lb>
-        </Bx>
-
-        {/* ─── Polymorphism outcomes ─── */}
-        <Ar x1={C4} y1={208} x2={C4} y2={232}/>
-        <Bx x={C4-72} y={232} w={144} h={120} fill={pol.bg} stroke={pol.b} rx={6}>
-          <Lb x={C4} y={248} s={10} c={pol.c} w={600}>POLY-2 decide</Lb>
-          <Lb x={C4} y={268} s={9}>Strategy — PAT-6</Lb>
-          <Lb x={C4} y={282} s={9}>Repository — PRT-2</Lb>
-          <Lb x={C4} y={296} s={9}>Template — PAT-9</Lb>
-          <Lb x={C4} y={310} s={9}>Operators — OBJ-1</Lb>
-          <Lb x={C4} y={328} s={9} c="var(--red)">isinstance switch?</Lb>
-          <Lb x={C4} y={342} s={9} c="var(--red)">→ Redesign to Protocol</Lb>
-        </Bx>
-
-        {/* ═══ ROW 6: ANTI-PATTERN AUDITS ═══ */}
-        {[
-          {cx:C1, items:["Public mutable?","Mutable default?","No-op getter?","Leaked collection?"], ...enc},
-          {cx:C2, items:["Leaky abstraction?","Fat interface?","ABC no abstract?","YAGNI violation?"], ...abs},
-          {cx:C3, items:["Diamond problem?","5+ levels deep?","Override >50%?","Broken super()?"], ...inh},
-          {cx:C4, items:["isinstance switch?","NotImplementedError?","Inconsistent returns?","hash/eq broken?"], ...pol},
-        ].map(col=><g key={col.cx}>
-          <Ar x1={col.cx} y1={352} x2={col.cx} y2={380}/>
-          <Bx x={col.cx-72} y={380} w={144} h={90} fill={red.bg} stroke={red.b} rx={4}>
-            <Lb x={col.cx} y={396} s={9} c="var(--red)" w={500}>Anti-pattern audit</Lb>
-            {col.items.map((item,j)=><Lb key={j} x={col.cx} y={412+j*14} s={8}>{item}</Lb>)}
+          {/* ═══ ROW 2: WHICH PILLAR? ═══ */}
+          <Bx x={175} y={68} w={340} h={44} fill="rgba(196,155,222,0.08)" stroke="rgba(196,155,222,0.25)" rx={8}>
+            <Lb x={345} y={82} s={11} c="var(--accent-3)" w={600}>Which OOP pillar? — DT-OOP-1</Lb>
+            <Lb x={345} y={98} s={9}>Walk each relevant branch. Most designs involve more than one.</Lb>
           </Bx>
-          <Ar x1={col.cx} y1={470} x2={col.cx} y2={498}/>
-        </g>)}
 
-        {/* Encap composition box also needs arrow down */}
-        <line x1={C3-40} y1={282} x2={C3-40} y2={498} stroke="var(--text-3)" strokeWidth="0.5" strokeDasharray="3 2"/>
+          {/* ═══ ROW 3: FOUR PILLAR HEADERS ═══ */}
+          {[
+            { cx: C1, l: "Encapsulation", ...enc, id: "oop-encap" },
+            { cx: C2, l: "Abstraction", ...abs, id: "oop-abstr" },
+            { cx: C3, l: "Inheritance", ...inh, id: "oop-inher" },
+            { cx: C4, l: "Polymorphism", ...pol, id: "oop-poly" },
+          ].map((p, i) => (
+            <g key={p.l}>
+              <Ar x1={225 + i * 80} y1={112} x2={p.cx} y2={138} />
+              <Bx x={p.cx - CW / 2} y={138} w={CW} h={34} fill={p.bg} stroke={p.b} rx={6}
+                onClick={scrollTo ? () => scrollTo(p.id) : undefined} cls={scrollTo ? "dc" : ""}>
+                <Lb x={p.cx} y={155} s={11} c={p.c} w={600}>{p.l}</Lb>
+              </Bx>
+              <Ar x1={p.cx} y1={172} x2={p.cx} y2={196} />
+            </g>
+          ))}
 
-        {/* ═══ ROW 7: CONVERGE ═══ */}
-        <Bx x={120} y={498} w={440} h={36} fill="rgba(196,155,222,0.07)" stroke="rgba(196,155,222,0.25)" rx={8}>
-          <Lb x={340} y={516} s={11} c="var(--accent-3)" w={500}>More pillars to apply?</Lb>
-        </Bx>
+          {/* ═══ ROW 4: DECISION GATES ═══ */}
+          <Bx x={C1 - 70} y={196} w={140} h={30} fill={enc.bg} stroke={enc.b} rx={4}>
+            <Lb x={C1} y={211} s={10} c={enc.c} w={500}>State exposed?</Lb>
+          </Bx>
+          <Bx x={C2 - 70} y={196} w={140} h={30} fill={abs.bg} stroke={abs.b} rx={4}>
+            <Lb x={C2} y={211} s={10} c={abs.c} w={500}>Boundary type?</Lb>
+          </Bx>
+          <Bx x={C3 - 70} y={196} w={140} h={30} fill={inh.bg} stroke={inh.b} rx={4}>
+            <Lb x={C3} y={211} s={10} c={inh.c} w={500}>True is-a?</Lb>
+          </Bx>
+          <Bx x={C4 - 70} y={196} w={140} h={30} fill={pol.bg} stroke={pol.b} rx={4}>
+            <Lb x={C4} y={211} s={10} c={pol.c} w={500}>Which mechanism?</Lb>
+          </Bx>
 
-        {/* Loop arrow */}
-        <path d="M120 516 L60 516 L60 84 L170 84" fill="none" stroke="var(--text-3)" strokeWidth="0.8" strokeDasharray="4 3" markerEnd="url(#da)"/>
-        <Lb x={52} y={504} s={8} c="var(--text-3)" a="end">Yes</Lb>
+          {/* ═══ ROW 5: OUTCOMES with SVG label tags ═══ */}
 
-        {/* Done arrow */}
-        <Ar x1={560} y1={516} x2={600} y2={550}/>
-        <Lb x={586} y={530} s={8} c="var(--text-3)">No</Lb>
+          {/* ─── Encapsulation outcomes ─── */}
+          <Ar x1={C1} y1={226} x2={C1} y2={254} />
+          <Bx x={C1 - 74} y={254} w={148} h={172} fill={enc.bg} stroke={enc.b} rx={6}>
+            <Lb x={C1} y={272} s={10} c={enc.c} w={600}>Apply encapsulation</Lb>
+            {/* Mechanism items with label tags */}
+            <Lb x={C1} y={294} s={9}>_private convention</Lb>
+            <g>
+              <Lb x={C1 - 36} y={314} s={9} a="start">@property</Lb>
+              <SvgTag x={C1 + 40} y={314} label="DEC-1" anchor="start" />
+            </g>
+            <g>
+              <Lb x={C1 - 36} y={334} s={9} a="start">__slots__</Lb>
+              <SvgTag x={C1 + 28} y={334} label="OBJ-1" anchor="start" />
+            </g>
+            <g>
+              <Lb x={C1 - 36} y={354} s={9} a="start">Defensive cp</Lb>
+              <SvgTag x={C1 + 38} y={354} label="OBJ-2" anchor="start" />
+            </g>
+            <Lb x={C1} y={374} s={9}>MappingProxyType</Lb>
+            <Lb x={C1} y={396} s={9} c="var(--accent-1)" w={500}>Tell, don't ask</Lb>
+            {/* Separator line */}
+            <line x1={C1 - 60} y1={410} x2={C1 + 60} y2={410} stroke={enc.b} strokeWidth="0.5" />
+            <Lb x={C1} y={420} s={8} c="var(--text-3)">Test:</Lb>
+          </Bx>
+          <SvgTagRow cx={C1} y={420} labels={["ADV-2", "B.1.4"]} />
 
-        {/* ═══ ROW 8: DONE ═══ */}
-        <Bx x={500} y={544} w={170} h={56} rx={10} fill={grn.bg} stroke={grn.b}>
-          <Lb x={585} y={558} s={10} c="var(--green)" w={500}>All pillars applied</Lb>
-          <Lb x={585} y={574} s={9}>State hidden ✓</Lb>
-          <Lb x={585} y={588} s={9}>Boundaries typed ✓</Lb>
-        </Bx>
+          {/* ─── Abstraction outcomes ─── */}
+          <Ar x1={C2} y1={226} x2={C2} y2={254} />
+          <Bx x={C2 - 74} y={254} w={148} h={172} fill={abs.bg} stroke={abs.b} rx={6}>
+            <Lb x={C2} y={272} s={10} c={abs.c} w={600}>Choose tool</Lb>
+            <g>
+              <Lb x={C2 - 36} y={296} s={9} c={abs.c} a="start">IO boundary →</Lb>
+            </g>
+            <SvgTag x={C2} y={316} label="PRT-2" />
+            <Lb x={C2} y={336} s={8}>always, even with 1 impl</Lb>
+            <g>
+              <Lb x={C2 - 36} y={356} s={9} c={abs.c} a="start">Shared impl →</Lb>
+            </g>
+            <SvgTagRow cx={C2} y={374} labels={["DEC-5", "B.2.1"]} />
+            <Lb x={C2} y={396} s={9} c="var(--yellow)">No 2nd impl → YAGNI</Lb>
+            <g>
+              <Lb x={C2 - 36} y={416} s={9} c={abs.c} a="start">Complex →</Lb>
+              <SvgTag x={C2 + 22} y={416} label="PAT-4" anchor="start" />
+            </g>
+          </Bx>
 
-        {/* ═══ FOOTER: SOLID cross-ref ═══ */}
-        <Ar x1={585} y1={600} x2={585} y2={624}/>
-        <Bx x={480} y={624} w={210} h={28} rx={14} fill="rgba(196,155,222,0.06)" stroke="rgba(196,155,222,0.2)">
-          <Lb x={585} y={638} s={9} c="var(--accent-3)">Next → apply SOLID (Diagram 02)</Lb>
-        </Bx>
-      </svg>
+          {/* ─── Inheritance outcomes ─── */}
+          <Ar x1={C3 - 30} y1={226} x2={C3 - 42} y2={254} />
+          <Lb x={C3 - 44} y={238} s={8} c="var(--red)">No</Lb>
+          <Ar x1={C3 + 30} y1={226} x2={C3 + 42} y2={254} />
+          <Lb x={C3 + 46} y={238} s={8} c="var(--green)">Yes</Lb>
+          {/* No → Composition */}
+          <Bx x={C3 - 74} y={254} w={66} h={56} fill={red.bg} stroke={red.b} rx={4}>
+            <Lb x={C3 - 41} y={270} s={9} c="var(--red)" w={500}>Use</Lb>
+            <Lb x={C3 - 41} y={284} s={9} c="var(--red)" w={500}>compo-</Lb>
+            <Lb x={C3 - 41} y={298} s={9} c="var(--red)" w={500}>sition</Lb>
+          </Bx>
+          {/* Yes → POLY-1 + super check */}
+          <Bx x={C3 + 6} y={254} w={70} h={172} fill={inh.bg} stroke={inh.b} rx={4}>
+            <SvgTag x={C3 + 41} y={274} label="POLY-1" />
+            <Lb x={C3 + 41} y={298} s={8}>Max 1</Lb>
+            <Lb x={C3 + 41} y={310} s={8}>concrete</Lb>
+            <Lb x={C3 + 41} y={322} s={8}>base</Lb>
+            <line x1={C3 + 14} y1={338} x2={C3 + 68} y2={338} stroke={inh.b} strokeWidth="0.5" />
+            <Lb x={C3 + 41} y={354} s={9} c={inh.c} w={500}>super()?</Lb>
+            <Lb x={C3 + 41} y={372} s={8}>Every class</Lb>
+            <Lb x={C3 + 41} y={384} s={8}>must call it</Lb>
+            <line x1={C3 + 14} y1={398} x2={C3 + 68} y2={398} stroke={inh.b} strokeWidth="0.5" />
+            <Lb x={C3 + 41} y={412} s={8} c="var(--text-3)">Mixin:</Lb>
+          </Bx>
+          <SvgTag x={C3 + 41} y={412} label="ADV-MIXIN-1" />
+
+          {/* ─── Polymorphism outcomes ─── */}
+          <Ar x1={C4} y1={226} x2={C4} y2={254} />
+          <Bx x={C4 - 74} y={254} w={148} h={172} fill={pol.bg} stroke={pol.b} rx={6}>
+            <SvgTag x={C4} y={274} label="POLY-2" />
+            <Lb x={C4} y={294} s={10} c={pol.c} w={500}>decide mechanism</Lb>
+            <g>
+              <Lb x={C4 - 36} y={316} s={9} a="start">Strategy</Lb>
+              <SvgTag x={C4 + 18} y={316} label="PAT-6" anchor="start" />
+            </g>
+            <g>
+              <Lb x={C4 - 36} y={338} s={9} a="start">Repository</Lb>
+              <SvgTag x={C4 + 32} y={338} label="PRT-2" anchor="start" />
+            </g>
+            <g>
+              <Lb x={C4 - 36} y={360} s={9} a="start">Template</Lb>
+              <SvgTag x={C4 + 26} y={360} label="PAT-9" anchor="start" />
+            </g>
+            <g>
+              <Lb x={C4 - 36} y={382} s={9} a="start">Operators</Lb>
+              <SvgTag x={C4 + 30} y={382} label="OBJ-1" anchor="start" />
+            </g>
+            <line x1={C4 - 60} y1={398} x2={C4 + 60} y2={398} stroke={pol.b} strokeWidth="0.5" />
+            <Lb x={C4} y={414} s={9} c="var(--red)">isinstance switch?</Lb>
+          </Bx>
+          {/* Redesign callout below poly box */}
+          <Bx x={C4 - 56} y={430} w={112} h={20} fill="rgba(248,113,113,0.08)" stroke="rgba(248,113,113,0.15)" rx={3}>
+            <Lb x={C4} y={440} s={8} c="var(--red)">→ Redesign to Protocol</Lb>
+          </Bx>
+
+          {/* ═══ ROW 6: ANTI-PATTERN AUDITS ═══ */}
+          {[
+            { cx: C1, items: ["Public mutable?", "Mutable default?", "No-op getter?", "Leaked collection?"], ...enc, y0: 432 },
+            { cx: C2, items: ["Leaky abstraction?", "Fat interface?", "ABC no abstract?", "YAGNI violation?"], ...abs, y0: 432 },
+            { cx: C3, items: ["Diamond problem?", "5+ levels deep?", "Override >50%?", "Broken super()?"], ...inh, y0: 432 },
+            { cx: C4, items: ["isinstance switch?", "NotImplementedError?", "Inconsistent returns?", "hash/eq broken?"], ...pol, y0: 460 },
+          ].map(col => (
+            <g key={col.cx}>
+              <Ar x1={col.cx} y1={col.y0} x2={col.cx} y2={col.y0 + 26} />
+              <Bx x={col.cx - 74} y={col.y0 + 26} w={148} h={106} fill={red.bg} stroke={red.b} rx={4}>
+                <Lb x={col.cx} y={col.y0 + 44} s={9} c="var(--red)" w={500}>Anti-pattern audit</Lb>
+                {col.items.map((item, j) => (
+                  <Lb key={j} x={col.cx} y={col.y0 + 62 + j * 16} s={8.5}>{item}</Lb>
+                ))}
+              </Bx>
+              <Ar x1={col.cx} y1={col.y0 + 132} x2={col.cx} y2={col.y0 + 160} />
+            </g>
+          ))}
+
+          {/* Composition dashed line */}
+          <line x1={C3 - 41} y1={310} x2={C3 - 41} y2={592} stroke="var(--text-3)" strokeWidth="0.5" strokeDasharray="3 2" />
+
+          {/* ═══ ROW 7: CONVERGE ═══ */}
+          <Bx x={125} y={600} w={440} h={40} fill="rgba(196,155,222,0.07)" stroke="rgba(196,155,222,0.25)" rx={8}>
+            <Lb x={345} y={620} s={11} c="var(--accent-3)" w={500}>More pillars to apply?</Lb>
+          </Bx>
+
+          {/* Loop arrow */}
+          <path d="M125 620 L60 620 L60 90 L175 90" fill="none" stroke="var(--text-3)" strokeWidth="0.8" strokeDasharray="4 3" markerEnd="url(#da)" />
+          <Lb x={52} y={608} s={8} c="var(--text-3)" a="end">Yes</Lb>
+
+          {/* Done arrow */}
+          <Ar x1={565} y1={620} x2={610} y2={660} />
+          <Lb x={594} y={642} s={8} c="var(--text-3)">No</Lb>
+
+          {/* ═══ ROW 8: DONE ═══ */}
+          <Bx x={500} y={660} w={180} h={64} rx={10} fill={grn.bg} stroke={grn.b}>
+            <Lb x={590} y={678} s={10} c="var(--green)" w={500}>All pillars applied</Lb>
+            <Lb x={590} y={696} s={9}>State hidden ✓</Lb>
+            <Lb x={590} y={712} s={9}>Boundaries typed ✓</Lb>
+          </Bx>
+
+          {/* ═══ ROW 9: CROSS-REFERENCE SUMMARY ═══ */}
+          <Ar x1={590} y1={724} x2={590} y2={752} />
+          <Bx x={475} y={752} w={230} h={30} rx={15} fill="rgba(196,155,222,0.06)" stroke="rgba(196,155,222,0.2)">
+            <Lb x={590} y={767} s={9} c="var(--accent-3)">Next → apply SOLID (Diagram 02)</Lb>
+          </Bx>
+
+          {/* ═══ LABEL LEGEND BAR ═══ */}
+          <Bx x={40} y={810} w={610} h={90} rx={8} fill="var(--bg-2)" stroke="var(--border)">
+            <Lb x={345} y={828} s={10} c="var(--text-2)" w={500}>Labels referenced in this tree</Lb>
+            {/* Row 1 — Object / Decorator */}
+            <SvgTagRow cx={200} y={852} labels={["OBJ-1", "OBJ-2", "DEC-1", "DEC-5"]} gap={5} />
+            {/* Row 2 — Protocol / Pattern / Poly */}
+            <SvgTagRow cx={200} y={876} labels={["PRT-2", "PAT-4", "PAT-6", "PAT-9", "POLY-1", "POLY-2"]} gap={5} />
+            {/* Row 3 — TDD / Mixin */}
+            <SvgTagRow cx={530} y={852} labels={["ADV-2", "B.1.4"]} gap={5} />
+            <SvgTagRow cx={530} y={876} labels={["B.2.1", "ADV-MIXIN-1"]} gap={5} />
+          </Bx>
+        </svg>
+      </div>
     </div>
-  </div>;
+  );
 }
+
 
 /* ════════════════════════════════════════════════════════════════════════════
    QUICK REFERENCE TABLE
@@ -759,7 +879,6 @@ function useSearch(q) {
       p.examples.forEach(ex => { if(ex.title.toLowerCase().includes(ql)||ex.code.toLowerCase().includes(ql)) res.push({type:"example",id:p.id,title:ex.title,sub:p.label}); });
       p.antiPatterns.forEach(ap => { if(ap.id.toLowerCase().includes(ql)||ap.name.toLowerCase().includes(ql)) res.push({type:"anti-pattern",id:p.id,title:`⚠ ${ap.id}: ${ap.name}`,sub:p.label}); });
     });
-    // Search labels themselves
     Object.entries(LABELS).forEach(([key,val]) => {
       if (key.toLowerCase().includes(ql)||val.name.toLowerCase().includes(ql)||val.def.toLowerCase().includes(ql))
         res.push({type:"label",id:"oop-encap",title:`${key} — ${val.name}`,sub:val.def.slice(0,60)});
@@ -879,6 +998,10 @@ export default function OOPFundamentals() {
         .ref-tip-name{font-size:13px;font-weight:600;color:var(--text-0)}
         .ref-tip-def{font-size:12px;color:var(--text-1);line-height:1.5;white-space:normal;word-wrap:break-word}
         .refs-row,.refs-row>div,.ref-tags,.ex-head,.ex-refs,.ap-header,.ap-tags,.label-legend,.ap-card{overflow:visible}
+
+        /* SVG Tag styling */
+        .svg-tag rect{transition:filter .15s ease}
+        .svg-tag:hover rect{filter:brightness(1.25)}
 
         /* Pillar */
         .pillar{margin-bottom:56px;padding-bottom:48px;border-bottom:1px solid var(--border);animation:fadeIn .3s ease both}
