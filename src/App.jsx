@@ -510,41 +510,196 @@ const SOLID_MAP = {
    DECISION TREE DIAGRAMS (unchanged from original)
    ════════════════════════════════════════════════════════════════════════════ */
 
-function Bx({x,y,w,h,fill,stroke,rx,children,onClick,className=""}) {
-  return <g className={`dia-n ${className}`} onClick={onClick} style={onClick?{cursor:"pointer"}:{}}>
-    <rect x={x} y={y} width={w} height={h} rx={rx||6} fill={fill||"var(--bg-2)"} stroke={stroke||"var(--border-light)"} strokeWidth="0.7"/>
-    {children}
-  </g>;
-}
-function Ar({x1,y1,x2,y2,d}) { return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text-3)" strokeWidth="0.8" markerEnd="url(#dt-a)" strokeDasharray={d?"4 3":"none"}/>; }
-function Lb({x,y,children,a="middle",s=11,c="var(--text-2)",w=400}) { return <text x={x} y={y} textAnchor={a} dominantBaseline="central" fill={c} fontSize={s} fontFamily="'IBM Plex Mono',monospace" fontWeight={w}>{children}</text>; }
+/*
+  DT-OOP-1 — Single comprehensive SVG
+  
+  Replace the entire DT / DecisionTree section in App.jsx with this.
+  No tabs, no panels — one scrollable diagram showing all 4 branches.
+  
+  Usage:  <DecisionTree scrollTo={scrollTo} />
+*/
 
-function DTOverview({onNav}) {
-  const ps=[{k:"encap",l:"Encapsulation",s:"Hide internal state",x:28,c:"var(--accent-2)",cd:"rgba(133,205,202,0.12)",b:"rgba(133,205,202,0.3)"},{k:"abstr",l:"Abstraction",s:"What, not how",x:188,c:"var(--accent-4)",cd:"rgba(121,184,255,0.12)",b:"rgba(121,184,255,0.3)"},{k:"inher",l:"Inheritance",s:"Is-a reuse",x:348,c:"var(--accent-1)",cd:"rgba(232,168,124,0.12)",b:"rgba(232,168,124,0.3)"},{k:"poly",l:"Polymorphism",s:"Same interface",x:508,c:"var(--yellow)",cd:"rgba(252,211,77,0.12)",b:"rgba(252,211,77,0.3)"}];
-  return <svg width="100%" viewBox="0 0 680 420" style={{display:"block"}}>
-    <defs><marker id="dt-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1.5L8 5L2 8.5" fill="none" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></marker></defs>
-    <Bx x={220} y={16} w={240} h={36} rx={18} fill="var(--bg-3)" stroke="var(--border-light)"><Lb x={340} y={34} s={12} c="var(--text-1)" w={500}>New class or method to write</Lb></Bx>
-    <Ar x1={340} y1={52} x2={340} y2={76}/>
-    <Bx x={160} y={76} w={360} h={48} fill="rgba(196,155,222,0.1)" stroke="rgba(196,155,222,0.3)" rx={8}><Lb x={340} y={92} s={12} c="var(--accent-3)" w={600}>Which OOP pillar? — DT-OOP-1</Lb><Lb x={340} y={108} s={10}>Walk each relevant branch in turn</Lb></Bx>
-    {ps.map((p,i) => { const cx=p.x+72; return <g key={p.k}><Ar x1={180+i*90} y1={124} x2={cx} y2={150}/><Bx x={p.x} y={150} w={144} h={52} fill={p.cd} stroke={p.b} rx={8} onClick={()=>onNav(p.k)} className="dia-click"><Lb x={cx} y={168} s={12} c={p.c} w={600}>{p.l}</Lb><Lb x={cx} y={186} s={10}>{p.s}</Lb></Bx><Ar x1={cx} y1={202} x2={cx} y2={228}/><Bx x={p.x+12} y={228} w={120} h={32} fill="var(--bg-2)" stroke={p.b} rx={4}><Lb x={cx} y={244} s={10}>{p.k==="encap"?"State exposed?":p.k==="abstr"?"Boundary type?":p.k==="inher"?"True is-a?":"Poly kind?"}</Lb></Bx><Ar x1={cx} y1={260} x2={cx} y2={286}/><Bx x={p.x+4} y={286} w={136} h={32} fill="rgba(248,113,113,0.06)" stroke="rgba(248,113,113,0.2)" rx={4}><Lb x={cx} y={302} s={10} c="var(--red)">Anti-pattern audit</Lb></Bx><Ar x1={cx} y1={318} x2={cx} y2={348}/></g>;})}
-    <Bx x={170} y={348} w={340} h={40} fill="rgba(196,155,222,0.07)" stroke="rgba(196,155,222,0.25)" rx={8}><Lb x={340} y={368} s={12} c="var(--accent-3)" w={500}>More pillars to apply?</Lb></Bx>
-    <path d="M170 368 L120 368 L120 100 L160 100" fill="none" stroke="var(--text-3)" strokeWidth="0.8" strokeDasharray="4 3" markerEnd="url(#dt-a)"/>
-    <Lb x={108} y={356} s={9} c="var(--text-3)" a="end">Yes</Lb>
-    <Ar x1={510} y1={368} x2={570} y2={400}/><Lb x={548} y={382} s={9} c="var(--text-3)">No</Lb>
-    <Bx x={520} y={400} w={140} h={28} rx={14} fill="rgba(110,231,183,0.08)" stroke="rgba(110,231,183,0.25)"><Lb x={590} y={414} s={10} c="var(--green)">Done → apply SOLID</Lb></Bx>
-  </svg>;
-}
+function Bx({x,y,w,h,fill,stroke,rx,children,onClick,cls=""}){return<g className={`dn ${cls}`} onClick={onClick} style={onClick?{cursor:"pointer"}:{}}><rect x={x} y={y} width={w} height={h} rx={rx||6} fill={fill||"var(--bg-2)"} stroke={stroke||"var(--border-light)"} strokeWidth="0.7"/>{children}</g>;}
+function Ar({x1,y1,x2,y2,d}){return<line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text-3)" strokeWidth="0.8" markerEnd="url(#da)" strokeDasharray={d?"4 3":"none"}/>;} 
+function Lb({x,y,children,a="middle",s=10,c="var(--text-2)",w=400}){return<text x={x} y={y} textAnchor={a} dominantBaseline="central" fill={c} fontSize={s} fontFamily="'IBM Plex Mono',monospace" fontWeight={w}>{children}</text>;}
 
 function DecisionTree({scrollTo}) {
-  const [panel, setPanel] = useState("overview");
-  const tabs=[{id:"overview",l:"Overview",c:"var(--accent-3)"},{id:"encap",l:"Encapsulation",c:"var(--accent-2)"},{id:"abstr",l:"Abstraction",c:"var(--accent-4)"},{id:"inher",l:"Inheritance",c:"var(--accent-1)"},{id:"poly",l:"Polymorphism",c:"var(--yellow)"}];
-  return <div className="dt-diagram" id="dt-oop-1">
-    <div className="dt-head"><span className="dt-tag">DT-OOP-1</span><span className="dt-title">Four Pillars Decision Tree</span></div>
-    <div className="dt-tabs">{tabs.map(t => <button key={t.id} className={`dt-tab ${panel===t.id?"on":""}`} onClick={()=>setPanel(t.id)} style={panel===t.id?{borderColor:t.c,color:t.c}:{}}>{t.l}</button>)}</div>
-    <div className="dt-canvas">{panel==="overview"&&<DTOverview onNav={setPanel}/>}{panel!=="overview"&&<div style={{padding:"24px",color:"var(--text-2)",fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",textAlign:"center"}}>Branch diagram — see original for full SVG. Click Overview to return.</div>}</div>
+  // Column centers
+  const C1=85, C2=255, C3=425, C4=595;
+  const CW=150; // column width
+  
+  // Colors
+  const enc={c:"var(--accent-2)",bg:"rgba(133,205,202,0.10)",b:"rgba(133,205,202,0.25)"};
+  const abs={c:"var(--accent-4)",bg:"rgba(121,184,255,0.10)",b:"rgba(121,184,255,0.25)"};
+  const inh={c:"var(--accent-1)",bg:"rgba(232,168,124,0.10)",b:"rgba(232,168,124,0.25)"};
+  const pol={c:"var(--yellow)",bg:"rgba(252,211,77,0.10)",b:"rgba(252,211,77,0.25)"};
+  const red={bg:"rgba(248,113,113,0.05)",b:"rgba(248,113,113,0.2)"};
+  const grn={bg:"rgba(110,231,183,0.08)",b:"rgba(110,231,183,0.2)"};
+
+  return <div className="dt" id="dt-oop-1">
+    <div className="dt-hd">
+      <span className="dt-tg">DT-OOP-1</span>
+      <span className="dt-ti">Four Pillars Decision Tree</span>
+    </div>
+    <div className="dt-cv" style={{overflowY:"auto",maxHeight:"70vh"}}>
+      <svg width="100%" viewBox="0 0 680 920" style={{display:"block",minWidth:600}}>
+        <defs>
+          <marker id="da" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </marker>
+        </defs>
+
+        {/* ═══ ROW 1: START ═══ */}
+        <Bx x={220} y={12} w={240} h={32} rx={16} fill="var(--bg-3)">
+          <Lb x={340} y={28} s={11} c="var(--text-1)" w={500}>New class or method to write</Lb>
+        </Bx>
+        <Ar x1={340} y1={44} x2={340} y2={64}/>
+
+        {/* ═══ ROW 2: WHICH PILLAR? ═══ */}
+        <Bx x={170} y={64} w={340} h={40} fill="rgba(196,155,222,0.08)" stroke="rgba(196,155,222,0.25)" rx={8}>
+          <Lb x={340} y={78} s={11} c="var(--accent-3)" w={600}>Which OOP pillar? — DT-OOP-1</Lb>
+          <Lb x={340} y={92} s={9}>Walk each relevant branch. Most designs involve more than one.</Lb>
+        </Bx>
+
+        {/* ═══ ROW 3: FOUR PILLAR HEADERS ═══ */}
+        {[
+          {cx:C1,l:"Encapsulation",...enc,id:"oop-encap"},
+          {cx:C2,l:"Abstraction",...abs,id:"oop-abstr"},
+          {cx:C3,l:"Inheritance",...inh,id:"oop-inher"},
+          {cx:C4,l:"Polymorphism",...pol,id:"oop-poly"},
+        ].map((p,i)=><g key={p.l}>
+          <Ar x1={220+i*80} y1={104} x2={p.cx} y2={128}/>
+          <Bx x={p.cx-CW/2} y={128} w={CW} h={32} fill={p.bg} stroke={p.b} rx={6} 
+            onClick={scrollTo?()=>scrollTo(p.id):undefined} cls={scrollTo?"dc":""}>
+            <Lb x={p.cx} y={144} s={11} c={p.c} w={600}>{p.l}</Lb>
+          </Bx>
+          <Ar x1={p.cx} y1={160} x2={p.cx} y2={180}/>
+        </g>)}
+
+        {/* ═══ ROW 4: DECISION GATES ═══ */}
+        {/* Encapsulation gate */}
+        <Bx x={C1-68} y={180} w={136} h={28} fill={enc.bg} stroke={enc.b} rx={4}>
+          <Lb x={C1} y={194} s={10} c={enc.c} w={500}>State exposed?</Lb>
+        </Bx>
+        {/* Abstraction gate */}
+        <Bx x={C2-68} y={180} w={136} h={28} fill={abs.bg} stroke={abs.b} rx={4}>
+          <Lb x={C2} y={194} s={10} c={abs.c} w={500}>Boundary type?</Lb>
+        </Bx>
+        {/* Inheritance gate */}
+        <Bx x={C3-68} y={180} w={136} h={28} fill={inh.bg} stroke={inh.b} rx={4}>
+          <Lb x={C3} y={194} s={10} c={inh.c} w={500}>True is-a?</Lb>
+        </Bx>
+        {/* Polymorphism gate */}
+        <Bx x={C4-68} y={180} w={136} h={28} fill={pol.bg} stroke={pol.b} rx={4}>
+          <Lb x={C4} y={194} s={10} c={pol.c} w={500}>Which mechanism?</Lb>
+        </Bx>
+
+        {/* ═══ ROW 5: OUTCOMES ═══ */}
+        {/* ─── Encapsulation outcomes ─── */}
+        <Ar x1={C1} y1={208} x2={C1} y2={232}/>
+        <Bx x={C1-72} y={232} w={144} h={120} fill={enc.bg} stroke={enc.b} rx={6}>
+          <Lb x={C1} y={248} s={10} c={enc.c} w={600}>Fix: ENCAP-1</Lb>
+          <Lb x={C1} y={266} s={9}>_private convention</Lb>
+          <Lb x={C1} y={280} s={9}>@property — DEC-1</Lb>
+          <Lb x={C1} y={294} s={9}>__slots__ — OBJ-1</Lb>
+          <Lb x={C1} y={308} s={9}>Defensive copy — OBJ-2</Lb>
+          <Lb x={C1} y={324} s={9}>MappingProxyType</Lb>
+          <Lb x={C1} y={340} s={9} c="var(--accent-1)">Tell, don't ask</Lb>
+        </Bx>
+
+        {/* ─── Abstraction outcomes ─── */}
+        <Ar x1={C2} y1={208} x2={C2} y2={232}/>
+        <Bx x={C2-72} y={232} w={144} h={120} fill={abs.bg} stroke={abs.b} rx={6}>
+          <Lb x={C2} y={248} s={10} c={abs.c} w={600}>Choose tool</Lb>
+          <Lb x={C2} y={268} s={9} c={abs.c}>IO boundary → Protocol</Lb>
+          <Lb x={C2} y={282} s={9}>PRT-2, always, even 1 impl</Lb>
+          <Lb x={C2} y={300} s={9} c={abs.c}>Shared impl → ABC</Lb>
+          <Lb x={C2} y={314} s={9}>DEC-5, B.2.1</Lb>
+          <Lb x={C2} y={332} s={9} c="var(--yellow)">No 2nd impl → YAGNI</Lb>
+          <Lb x={C2} y={346} s={9} c={abs.c}>Complex → Facade PAT-4</Lb>
+        </Bx>
+
+        {/* ─── Inheritance outcomes ─── */}
+        <Ar x1={C3-30} y1={208} x2={C3-40} y2={232}/>
+        <Lb x={C3-42} y={218} s={8} c="var(--red)">No</Lb>
+        <Ar x1={C3+30} y1={208} x2={C3+40} y2={232}/>
+        <Lb x={C3+44} y={218} s={8} c="var(--green)">Yes</Lb>
+        {/* No → Composition */}
+        <Bx x={C3-72} y={232} w={64} h={50} fill={red.bg} stroke={red.b} rx={4}>
+          <Lb x={C3-40} y={250} s={9} c="var(--red)" w={500}>Use</Lb>
+          <Lb x={C3-40} y={264} s={9} c="var(--red)" w={500}>compo-</Lb>
+          <Lb x={C3-40} y={278} s={9} c="var(--red)" w={500}>sition</Lb>
+        </Bx>
+        {/* Yes → POLY-1 + super check */}
+        <Bx x={C3+4} y={232} w={68} h={120} fill={inh.bg} stroke={inh.b} rx={4}>
+          <Lb x={C3+38} y={248} s={9} c={inh.c} w={600}>POLY-1</Lb>
+          <Lb x={C3+38} y={264} s={8}>Max 1</Lb>
+          <Lb x={C3+38} y={276} s={8}>concrete</Lb>
+          <Lb x={C3+38} y={290} s={8}>base</Lb>
+          <Lb x={C3+38} y={310} s={9} c={inh.c} w={500}>super()?</Lb>
+          <Lb x={C3+38} y={326} s={8}>Every class</Lb>
+          <Lb x={C3+38} y={338} s={8}>must call it</Lb>
+        </Bx>
+
+        {/* ─── Polymorphism outcomes ─── */}
+        <Ar x1={C4} y1={208} x2={C4} y2={232}/>
+        <Bx x={C4-72} y={232} w={144} h={120} fill={pol.bg} stroke={pol.b} rx={6}>
+          <Lb x={C4} y={248} s={10} c={pol.c} w={600}>POLY-2 decide</Lb>
+          <Lb x={C4} y={268} s={9}>Strategy — PAT-6</Lb>
+          <Lb x={C4} y={282} s={9}>Repository — PRT-2</Lb>
+          <Lb x={C4} y={296} s={9}>Template — PAT-9</Lb>
+          <Lb x={C4} y={310} s={9}>Operators — OBJ-1</Lb>
+          <Lb x={C4} y={328} s={9} c="var(--red)">isinstance switch?</Lb>
+          <Lb x={C4} y={342} s={9} c="var(--red)">→ Redesign to Protocol</Lb>
+        </Bx>
+
+        {/* ═══ ROW 6: ANTI-PATTERN AUDITS ═══ */}
+        {[
+          {cx:C1, items:["Public mutable?","Mutable default?","No-op getter?","Leaked collection?"], ...enc},
+          {cx:C2, items:["Leaky abstraction?","Fat interface?","ABC no abstract?","YAGNI violation?"], ...abs},
+          {cx:C3, items:["Diamond problem?","5+ levels deep?","Override >50%?","Broken super()?"], ...inh},
+          {cx:C4, items:["isinstance switch?","NotImplementedError?","Inconsistent returns?","hash/eq broken?"], ...pol},
+        ].map(col=><g key={col.cx}>
+          <Ar x1={col.cx} y1={352} x2={col.cx} y2={380}/>
+          <Bx x={col.cx-72} y={380} w={144} h={90} fill={red.bg} stroke={red.b} rx={4}>
+            <Lb x={col.cx} y={396} s={9} c="var(--red)" w={500}>Anti-pattern audit</Lb>
+            {col.items.map((item,j)=><Lb key={j} x={col.cx} y={412+j*14} s={8}>{item}</Lb>)}
+          </Bx>
+          <Ar x1={col.cx} y1={470} x2={col.cx} y2={498}/>
+        </g>)}
+
+        {/* Encap composition box also needs arrow down */}
+        <line x1={C3-40} y1={282} x2={C3-40} y2={498} stroke="var(--text-3)" strokeWidth="0.5" strokeDasharray="3 2"/>
+
+        {/* ═══ ROW 7: CONVERGE ═══ */}
+        <Bx x={120} y={498} w={440} h={36} fill="rgba(196,155,222,0.07)" stroke="rgba(196,155,222,0.25)" rx={8}>
+          <Lb x={340} y={516} s={11} c="var(--accent-3)" w={500}>More pillars to apply?</Lb>
+        </Bx>
+
+        {/* Loop arrow */}
+        <path d="M120 516 L60 516 L60 84 L170 84" fill="none" stroke="var(--text-3)" strokeWidth="0.8" strokeDasharray="4 3" markerEnd="url(#da)"/>
+        <Lb x={52} y={504} s={8} c="var(--text-3)" a="end">Yes</Lb>
+
+        {/* Done arrow */}
+        <Ar x1={560} y1={516} x2={600} y2={550}/>
+        <Lb x={586} y={530} s={8} c="var(--text-3)">No</Lb>
+
+        {/* ═══ ROW 8: DONE ═══ */}
+        <Bx x={500} y={544} w={170} h={56} rx={10} fill={grn.bg} stroke={grn.b}>
+          <Lb x={585} y={558} s={10} c="var(--green)" w={500}>All pillars applied</Lb>
+          <Lb x={585} y={574} s={9}>State hidden ✓</Lb>
+          <Lb x={585} y={588} s={9}>Boundaries typed ✓</Lb>
+        </Bx>
+
+        {/* ═══ FOOTER: SOLID cross-ref ═══ */}
+        <Ar x1={585} y1={600} x2={585} y2={624}/>
+        <Bx x={480} y={624} w={210} h={28} rx={14} fill="rgba(196,155,222,0.06)" stroke="rgba(196,155,222,0.2)">
+          <Lb x={585} y={638} s={9} c="var(--accent-3)">Next → apply SOLID (Diagram 02)</Lb>
+        </Bx>
+      </svg>
+    </div>
   </div>;
 }
-
 
 /* ════════════════════════════════════════════════════════════════════════════
    QUICK REFERENCE TABLE
