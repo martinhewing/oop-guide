@@ -80,25 +80,39 @@ function getLabelInfo(label) {
    COMPONENTS
    ════════════════════════════════════════════════════════════════════════════ */
 
-function RefTag({ label }) {
+function RefTag({label}) {
   const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({x:0, y:0});
+  const ref = useRef(null);
   const info = getLabelInfo(label);
-  return (
-    <span className="ref-tag" style={{ color: info.color, background: info.bg, borderColor: info.border }}
-      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      <span className="ref-icon" style={{ color: info.color }}>{info.icon}</span>
-      {label}
-      {show && info.def && (
-        <span className="ref-tip" style={{ borderColor: info.border }}>
-          <span className="ref-tip-head">
-            <span className="ref-tip-fam" style={{ color: info.color }}>{info.label}</span>
-            <span className="ref-tip-name">{info.name}</span>
-          </span>
-          <span className="ref-tip-def">{info.def}</span>
-        </span>
-      )}
-    </span>
-  );
+  const enter = () => {
+    if (ref.current) {
+      const b = ref.current.getBoundingClientRect();
+      setPos({
+        x: Math.min(Math.max(b.left + b.width/2, 160), window.innerWidth - 160),
+        y: b.top
+      });
+    }
+    setShow(true);
+  };
+  return <span ref={ref} className="ref-tag"
+    style={{color:info.color, background:info.bg, borderColor:info.border}}
+    onMouseEnter={enter} onMouseLeave={() => setShow(false)}>
+    <span className="ref-icon" style={{color:info.color}}>{info.icon}</span>{label}
+    {show && info.def && <div className="ref-tip" style={{
+      position: "fixed",
+      left: pos.x,
+      top: pos.y - 10,
+      transform: "translateX(-50%) translateY(-100%)",
+      borderColor: info.border
+    }}>
+      <div className="ref-tip-head">
+        <span className="ref-tip-fam" style={{color:info.color}}>{info.label}</span>
+        <span className="ref-tip-name">{info.name}</span>
+      </div>
+      <div className="ref-tip-def">{info.def}</div>
+    </div>}
+  </span>;
 }
 
 function LabelLegend() {
@@ -858,12 +872,13 @@ export default function OOPFundamentals() {
         .ref-tag{display:inline-flex;align-items:center;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;border:1px solid;cursor:default;transition:all .15s;white-space:nowrap;position:relative}
         .ref-tag:hover{filter:brightness(1.15)}
         .ref-icon{font-size:7px;opacity:.6}
-        .ref-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg-2);border:1px solid;border-radius:8px;padding:10px 14px;min-width:240px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:200;pointer-events:none;animation:fadeIn .12s ease;display:flex;flex-direction:column;gap:4px}
+        .ref-tip{background:var(--bg-2);border:1px solid;border-radius:8px;padding:10px 14px;width:280px;box-shadow:0 8px 32px rgba(0,0,0,.6);z-index:9999;pointer-events:none;animation:fadeIn .12s ease;display:flex;flex-direction:column;gap:4px} .ref-tip-def{font-size:12px;color:var(--text-1);line-height:1.5;white-space:normal;word-wrap:break-word}
         .ref-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--bg-2)}
         .ref-tip-head{display:flex;align-items:center;gap:8px}
         .ref-tip-fam{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
         .ref-tip-name{font-size:13px;font-weight:600;color:var(--text-0)}
-        .ref-tip-def{font-size:12px;color:var(--text-1);line-height:1.5}
+        .ref-tip-def{font-size:12px;color:var(--text-1);line-height:1.5;white-space:normal;word-wrap:break-word}
+        .refs-row,.refs-row>div,.ref-tags,.ex-head,.ex-refs,.ap-header,.ap-tags,.label-legend,.ap-card{overflow:visible}
 
         /* Pillar */
         .pillar{margin-bottom:56px;padding-bottom:48px;border-bottom:1px solid var(--border);animation:fadeIn .3s ease both}
